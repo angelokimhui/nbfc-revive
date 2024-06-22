@@ -4,7 +4,7 @@
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
  
-  Copyright (C) 2011-2013 Michael Möller <mmoeller@openhardwaremonitor.org>
+  Copyright (C) 2011-2020 Michael Möller <mmoeller@openhardwaremonitor.org>
   Copyright (C) 2011 Roland Reinl <roland-reinl@gmx.de>
 	
 */
@@ -203,6 +203,10 @@ namespace OpenHardwareMonitor.Hardware.HDD {
       get { return "Reallocated Sectors Count"; }
     }
 
+    public static string ReallocatedNANDBlockCount {
+      get { return "Reallocated NAND Block Count"; }
+    }
+
     public static string ReportedUncorrectableErrors {
       get { return "Reported Uncorrectable Errors"; }
     }
@@ -283,6 +287,10 @@ namespace OpenHardwareMonitor.Hardware.HDD {
       get { return "Total LBAs Written"; }
     }
 
+    public static string TotalWrittenToNAND {
+      get { return "Total Written to NAND"; }
+    }
+
     public static string TransferErrorRate {
       get { return "Transfer Error Rate"; }
     }
@@ -297,6 +305,10 @@ namespace OpenHardwareMonitor.Hardware.HDD {
 
     public static string Unknown {
       get { return "Unknown"; }
+    }
+
+    public static string UnusedReserveNANDBlocks {
+      get { return "Unused Reserve NAND Blocks"; }
     }
 
     public static string VibrationDuringWrite {
@@ -405,7 +417,7 @@ namespace OpenHardwareMonitor.Hardware.HDD {
 
     public static string MediaWearOutIndicator {
       get { return "Media Wear Out Indicator"; }
-    }    
+    }
 
     public static string ProgramFailCountChip {
       get { return "Program Fail Count (Chip)"; }
@@ -493,6 +505,22 @@ namespace OpenHardwareMonitor.Hardware.HDD {
 
     public static string PowerRecoveryCount {
       get { return "Power Recovery Count"; }
+    }
+
+    public static string ErrorCorrectionCount {
+      get { return "Error Correction Count"; }
+    }
+
+    public static string SuccessfulRAINRecoveryCount {
+      get { return "Successful RAIN Recovery Count"; }
+    }
+
+    public static string HostProgramNANDPagesCount {
+      get { return "Host Program NAND Pages Count"; }
+    }
+
+    public static string FTLProgramNANDPagesCount {
+      get { return "FTL Program NAND Pages Count"; }
     }
   }
 }

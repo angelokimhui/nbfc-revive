@@ -13,7 +13,7 @@ namespace OpenHardwareMonitor.Hardware.HDD {
   using OpenHardwareMonitor.Collections;
 
   [NamePrefix(""), RequireSmart(0xB1), RequireSmart(0xB3), RequireSmart(0xB5),
-    RequireSmart(0xB6), RequireSmart(0xB7), RequireSmart(0xBB), 
+    RequireSmart(0xB6), RequireSmart(0xB7), RequireSmart(0xBB),
     RequireSmart(0xC3), RequireSmart(0xC7)]
   internal class SSDSamsung : AbstractHarddrive {
 
@@ -24,14 +24,14 @@ namespace OpenHardwareMonitor.Hardware.HDD {
       new SmartAttribute(0x0C, SmartNames.PowerCycleCount, RawToInt),
       new SmartAttribute(0xAF, SmartNames.ProgramFailCountChip, RawToInt),
       new SmartAttribute(0xB0, SmartNames.EraseFailCountChip, RawToInt),
-      new SmartAttribute(0xB1, SmartNames.WearLevelingCount, RawToInt),
+      new SmartAttribute(0xB1, SmartNames.WearLevelingCount, (r, v, p) => v, SensorType.Level, 0, SmartNames.RemainingLife),
       new SmartAttribute(0xB2, SmartNames.UsedReservedBlockCountChip, RawToInt),
       new SmartAttribute(0xB3, SmartNames.UsedReservedBlockCountTotal, RawToInt),
 
       // Unused Reserved Block Count (Total)
-      new SmartAttribute(0xB4, SmartNames.RemainingLife,
-        null, SensorType.Level, 0, SmartNames.RemainingLife),
-      
+      //new SmartAttribute(0xB4, SmartNames.RemainingLife, 
+      //  null, SensorType.Level, 1, SmartNames.RemainingLife),
+
       new SmartAttribute(0xB5, SmartNames.ProgramFailCountTotal, RawToInt),
       new SmartAttribute(0xB6, SmartNames.EraseFailCountTotal, RawToInt),
       new SmartAttribute(0xB7, SmartNames.RuntimeBadBlockTotal, RawToInt),
@@ -50,12 +50,24 @@ namespace OpenHardwareMonitor.Hardware.HDD {
       new SmartAttribute(0xC9, SmartNames.SupercapStatus),
       new SmartAttribute(0xCA, SmartNames.ExceptionModeStatus),
       new SmartAttribute(0xEB, SmartNames.PowerRecoveryCount),
-      new SmartAttribute(0xF1, SmartNames.TotalLbasWritten, 
+      new SmartAttribute(0xF1, SmartNames.TotalLbasWritten,
         (byte[] r, byte v, IReadOnlyArray<IParameter> p) => { 
           return (((long)r[5] << 40) | ((long)r[4] << 32) | ((long)r[3] << 24) | 
             ((long)r[2] << 16) | ((long)r[1] << 8) | r[0]) * 
             (512.0f / 1024 / 1024 / 1024);
-        }, SensorType.Data, 0, "Total Bytes Written")
+        }, SensorType.Data, 0, SmartNames.TotalLbasWritten),
+      new SmartAttribute(0xF2, SmartNames.TotalLbasRead,
+        (byte[] r, byte v, IReadOnlyArray<IParameter> p) => {
+          return (((long)r[5] << 40) | ((long)r[4] << 32) | ((long)r[3] << 24) |
+            ((long)r[2] << 16) | ((long)r[1] << 8) | r[0]) *
+            (512.0f / 1024 / 1024 / 1024);
+        }, SensorType.Data, 1, SmartNames.TotalLbasRead),
+      new SmartAttribute(0xFB, SmartNames.TotalWrittenToNAND,
+        (byte[] r, byte v, IReadOnlyArray<IParameter> p) => {
+          return (((long)r[5] << 40) | ((long)r[4] << 32) | ((long)r[3] << 24) |
+            ((long)r[2] << 16) | ((long)r[1] << 8) | r[0]) *
+            (512.0f / 1024 / 1024 / 1024);
+        }, SensorType.Data, 2, SmartNames.TotalWrittenToNAND),
     };
 
     public SSDSamsung(ISmart smart, string name, string firmwareRevision,

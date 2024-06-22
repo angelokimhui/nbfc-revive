@@ -4,7 +4,7 @@
   License, v. 2.0. If a copy of the MPL was not distributed with this
   file, You can obtain one at http://mozilla.org/MPL/2.0/.
  
-  Copyright (C) 2009-2012 Michael Möller <mmoeller@openhardwaremonitor.org>
+  Copyright (C) 2009-2020 Michael Möller <mmoeller@openhardwaremonitor.org>
 	
 */
 
@@ -19,18 +19,41 @@ namespace OpenHardwareMonitor.Hardware.ATI {
     private readonly List<ATIGPU> hardware = new List<ATIGPU>();
     private readonly StringBuilder report = new StringBuilder();
 
+    private IntPtr context = IntPtr.Zero;
+
     public ATIGroup(ISettings settings) {
       try {
-        int status = ADL.ADL_Main_Control_Create(1);
+        var adlStatus = ADL.ADL_Main_Control_Create(1);
+        var adl2Status = ADL.ADL2_Main_Control_Create(1, out context);
 
         report.AppendLine("AMD Display Library");
         report.AppendLine();
-        report.Append("Status: ");
-        report.AppendLine(status == ADL.ADL_OK ? "OK" : 
-          status.ToString(CultureInfo.InvariantCulture));
+        report.Append("ADL Status: ");
+        report.AppendLine(adlStatus.ToString());
+        report.Append("ADL2 Status: ");
+        report.AppendLine(adl2Status.ToString());
         report.AppendLine();
 
-        if (status == ADL.ADL_OK) {
+        report.AppendLine("Graphics Versions");
+        report.AppendLine();
+        try {
+          var status = ADL.ADL_Graphics_Versions_Get(out var versionInfo);
+          report.Append(" Status: ");
+          report.AppendLine(status.ToString());
+          report.Append(" DriverVersion: ");
+          report.AppendLine(versionInfo.DriverVersion);
+          report.Append(" CatalystVersion: ");
+          report.AppendLine(versionInfo.CatalystVersion);
+          report.Append(" CatalystWebLink: ");
+          report.AppendLine(versionInfo.CatalystWebLink);
+        } catch (DllNotFoundException) {
+          report.AppendLine(" Status: DLL not found");
+        } catch (Exception e) {
+          report.AppendLine(" Status: " + e.Message);
+        }
+        report.AppendLine();
+
+        if (adlStatus == ADLStatus.OK) {
           int numberOfAdapters = 0;
           ADL.ADL_Adapter_NumberOfAdapters_Get(ref numberOfAdapters);
           
@@ -40,7 +63,7 @@ namespace OpenHardwareMonitor.Hardware.ATI {
 
           if (numberOfAdapters > 0) {
             ADLAdapterInfo[] adapterInfo = new ADLAdapterInfo[numberOfAdapters];
-            if (ADL.ADL_Adapter_AdapterInfo_Get(adapterInfo) == ADL.ADL_OK)
+            if (ADL.ADL_Adapter_AdapterInfo_Get(adapterInfo) == ADLStatus.OK)
               for (int i = 0; i < numberOfAdapters; i++) {
                 int isActive;
                 ADL.ADL_Adapter_Active_Get(adapterInfo[i].AdapterIndex,
@@ -86,12 +109,27 @@ namespace OpenHardwareMonitor.Hardware.ATI {
                       found = true;
                       break;
                     }
-                  if (!found)
-                    hardware.Add(new ATIGPU(
-                      adapterInfo[i].AdapterName.Trim(),
+                  if (!found) {
+                    var nameBuilder = new StringBuilder(adapterInfo[i].AdapterName);
+                    nameBuilder.Replace("(TM)", " ");
+
+                    var mi = new ADLMemoryInfo();
+                    if (ADL.ADL_Adapter_MemoryInfo_Get(adapterInfo[i].AdapterIndex, ref mi) == ADLStatus.OK)
+                      if (mi.Size > 0)
+                        nameBuilder.Append(string.Format(" {0} GB", mi.Size / 1024 / 1024 / 1024));
+
+                    int len = 0;
+                    do
+                    {
+                      len = nameBuilder.Length;
+                      nameBuilder.Replace("  ", " ");
+                    } while (len != nameBuilder.Length);
+
+                    hardware.Add(new ATIGPU(nameBuilder.ToString().Trim(),
                       adapterInfo[i].AdapterIndex,
                       adapterInfo[i].BusNumber,
-                      adapterInfo[i].DeviceNumber, settings));
+                      adapterInfo[i].DeviceNumber, context, settings));
+                  }
                 }
 
                 report.AppendLine();
@@ -120,6 +158,12 @@ namespace OpenHardwareMonitor.Hardware.ATI {
       try {
         foreach (ATIGPU gpu in hardware)
           gpu.Close();
+
+        if (context != IntPtr.Zero) {
+          ADL.ADL2_Main_Control_Destroy(context);
+          context = IntPtr.Zero;
+        }
+
         ADL.ADL_Main_Control_Destroy();
       } catch (Exception) { }
     }
